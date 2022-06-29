@@ -5,17 +5,22 @@ info:
   contact:
     name: 'Kay Herzam (Swiss Post)'
     email: kay.herzam@post.ch
-  version: 5.0.1
+  version: 5.1.0-feature-add-location-key.1
 host: 'server:8080'
 basePath: mqtt
 paths:
-  'cen-mc-rc/v1/machine/submit-mailpiece/{srcSystem}/{srcInstance}':
+  '/{locationKey}/cen-mc-rc/v5/machine/submit-mailpiece/{srcSystem}/{srcInstance}':
     post:
       summary: 'ATG-3 Submit Mailpiece (Sensordaten empfangen)'
       description: 'The Machine submits the recognized mailpiece attributes.'
       tags:
         - machine
       parameters:
+        -
+          name: locationKey
+          in: path
+          description: 'unique identifier of the sorting center'
+          type: string
         -
           name: srcSystem
           in: path
@@ -31,29 +36,7 @@ paths:
       responses:
         default:
           schema: {$ref: '#/definitions/SubmitMailpiece'}
-  'cen-mc-rc/v1/machinePAR/submit-mailpiece/{srcSystem}/{srcInstance}':
-    post:
-      summary: 'ATG-3 Submit Mailpiece (Sensordaten empfangen)'
-      description: 'PAR submits the recognized mailpiece attributes. [DEPRECATED] Topic will be removed in future releases after WESort is rolled out in all sorting centers.'
-      tags:
-        - machinePAR
-      parameters:
-        -
-          name: srcSystem
-          in: path
-          description: '3-letter uppercase name identifying the system issuing the message'
-          type: string
-          default: ASL
-        -
-          name: srcInstance
-          in: path
-          description: 'two-digit padded number identifying the system instance issuing the message'
-          type: string
-          default: '01'
-      responses:
-        default:
-          schema: {$ref: '#/definitions/SubmitMailpiecePAR'}
-  'cen-mc-rc/v1/machine/request-mailpiece-attributes/{srcSystem}/{srcInstance}/{conversationId}':
+  '/{locationKey}/cen-mc-rc/v5/machine/request-mailpiece-attributes/{srcSystem}/{srcInstance}/':
     post:
       summary: 'ATG-4 Request Mailpiece Attributes (Sortierziel berechnen)'
       description: 'Request for the coding result (outlet group)'
@@ -72,16 +55,10 @@ paths:
           description: 'two-digit padded number identifying the system instance issuing the message'
           type: string
           default: '01'
-        -
-          name: conversationId
-          in: path
-          description: 'ID that will be included in the transmit-mailpiece-attributes topic in order to correlate the messages'
-          type: string
-          default: '12345'
       responses:
         default:
           schema: {$ref: '#/definitions/RequestMailpieceAttributes'}
-  'cen-mc-rc/v1/machine/update-mailpiece-attributes/{srcSystem}/{srcInstance}':
+  '/{locationKey}/cen-mc-rc/v5/machine/update-mailpiece-attributes/{srcSystem}/{srcInstance}':
     post:
       summary: 'ATG-5 Update Mailpiece Attributes (Sortierergebnis empfangen)'
       description: 'The Machine reports new or changed attributes in order to update the mailpiece attribute database on the Coding System (e.g. indicating the sort bin). (Re-)Connected to ATG - The publisher needs to buffer all unsent messages for at least 1 day until the message is sent successfully to the ATG.'
@@ -103,7 +80,7 @@ paths:
       responses:
         default:
           schema: {$ref: '#/definitions/UpdateMailpieceAttributes'}
-  'cen-mc-rc/v1/coding/transmit-mailpiece-attributes/{srcSystem}/{srcInstance}/{dstSystem}/{dstInstance}/{conversationId}':
+  '/{locationKey}/cen-mc-rc/v5/coding/transmit-mailpiece-attributes/{srcSystem}/{srcInstance}/':
     post:
       summary: 'ATG-4 Transmit Mailpiece Attributes (Sortierziel berechnen)'
       description: 'The RC System returns mailpiece attributes to the Machine, either in response to a Submit Mailpiece or a Request Mailpiece Attributes. There may be multiple responses of Transmit Mailpiece Attributes for a single “Submit Mailpiece” message, e.g. partial OCR results followed with final VCS result.'
@@ -134,34 +111,6 @@ paths:
           description: 'two-digit padded number identifying the system instance receiving the message'
           type: string
           default: '01'
-        -
-          name: conversationId
-          in: path
-          description: 'ID from the request-mailpiece-attributes request for correlation'
-          type: string
-          default: '12345'
-      responses:
-        default:
-          schema: {$ref: '#/definitions/TransmitMailpieceAttributes'}
-  'cen-mc-rc/v1/coding/transmit-mailpiece-attributes/{srcSystem}/{srcInstance}':
-    post:
-      summary: 'ATG-4 Transmit Mailpiece Attributes (Sortierziel berechnen)'
-      description: 'Trigger transmit-mailpiece-attributes event without request (no dstSystem and dstInstance parameters)'
-      tags:
-        - coding
-      parameters:
-        -
-          name: srcSystem
-          in: path
-          description: '3-letter uppercase name identifying the system issuing the message'
-          type: string
-          default: ZDS
-        -
-          name: srcInstance
-          in: path
-          description: 'two-digit padded number identifying the system instance issuing the message'
-          type: string
-          default: '01'
       responses:
         default:
           schema: {$ref: '#/definitions/TransmitMailpieceAttributes'}
@@ -180,7 +129,7 @@ definitions:
     properties:
       outletGroup:
         $ref: '#/definitions/OutletGroup'
-        description: "The outlet group containing the outlets\n[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers."
+        description: 'The outlet group containing the outlets.'
       code:
         type: integer
         description: "The destination sort code is the outlet group name (Virtuelles Ziel) assigned to the mail piece.\nSpecific values are defined on a per-program basis."
@@ -213,9 +162,6 @@ definitions:
         type: string
         description: "[This is no CEN-Field]\nDie Erfassung liefert den Hausnummerzusatz der auf dem Paket adressierten Adresse (alt. houseNumberAddOn)"
         maxLength: 6
-      parcelAddressType:
-        $ref: '#/definitions/AddressType'
-        description: "[This is no CEN-Field]\n(DEPRECATED!)\nBeschreibt den Adresstyp vom Paket."
       destinationRegion:
         type: string
         description: "[This is no CEN-Field]\nDestination region of the mailpiece\nZielregion, zB. HAE1"
@@ -223,6 +169,7 @@ definitions:
         type: string
         description: "[This is no CEN-Field]\nProprietary Swiss Post Sort Code\n\nAll numbers:\n  __________ _____________________ ___________ _____ ________________\n| Postcode | Post Code Extension | Code Type | BBZ | SequenceNumber |\n|     4    |           2         |      1    |  3  |        4       |\n\ni.e. 17620013610850"
     required:
+      - outletGroup
       - code
     additionalProperties: false
   AddressType:
@@ -240,35 +187,6 @@ definitions:
       - DEFERRED_VCS_INTERNAL_ADDRESS
       - TEST_TARGET_INTERNAL_ADDRESS
     description: "DOMICILE_ADDRESS(Old Value = D)\nPOBOX_ADDRESS(Old Value = F)\nMILITARY_ADDRESS(Old Value = M)\nOVERSEAS_ADDRESS(Old Value = A)\nDOMICILE_CORRECTION_ADDRESS(Old Value = K)\nPOBOX_CORRECTION_ADDRESS(Old Value = L)\nPAKETBASE_INTERNAL_ADDRESS(Old Value = X)\nVCS_EXPIRED_INTERNAL_ADDRESS(Old Value = E)\nMCS_REJECT_INTERNAL_ADDRESS(Old Value = R)\nDEFERRED_VCS_INTERNAL_ADDRESS(Old Value = V)\nTEST_TARGET_INTERNAL_ADDRESS(Old Value = T)"
-  BarCodeStatus:
-    type: string
-    enum:
-      - NO_BARCODE
-      - DETECTED_AND_RECOGNIZED
-      - DETECTED_AND_NOT_RECOGNIZED
-    description: "# Description\r\n\r\nThis type defines the states a barcode can have.\r\n\r\n**NO_BARCODE**: The barcode symbol or the code value could not be detected.\r\n\r\n**DETECTED_AND_RECOGNIZED**: The barcode/matrix code matches at least one of the below patterns / validation rules\r\n\r\n**DETECTED_AND_NOT_RECOGNIZED**: The barcode/matrix code matches none of the below patterns / validation rules\r\n\r\n---\r\n\r\nOnly recognized barcodes/matrix codes such as productCodes should be used by consuming systems.\r\n\r\nNot recognized barcodes can be useful:\r\n- in case of new barcode formats\r\n- for systems outside of PL sorting systems\r\n- for (error) analysis\r\n\r\n# Patterns/ Validation Rules:\r\n\r\n## CODE_128\r\n\r\n   1. **Internationaler Barcode**\r\n\r\n       Beispiel: EP923689367CH  \r\n       Validierung: `[A-Z]{2}[0-9]{9}[A-Z]{2}` (13 Zeichen)\r\n\r\n   2. **Nationaler Barcode**\r\n\r\n       Beispiel: 994214393000008666  \r\n       Validierung: `(98|99)[0-9]{16}` (18 Zeichen)\r\n\r\n   3. **Produktcode: PRZL (Produkt/Zusatzleistungen)**\r\n\r\n       Beispiel: 0509  \r\n       Validierung: `[0-9]{4}` (4 Zeichen)\r\n\r\n   3. **BoxId**\r\n\r\n       Erste zwei Ziffern: Typ der Box: «45» für ThermoCare-Box, Letzte sechs Ziffern: Seriennummer der Box\r\n       Beispiel: 45093456\r\n       Validierung: `[0-9]{8}` (8 Zeichen)\r\n\r\n   4. **Förderhilfentyp**\r\n\r\n       Format: Erste zwei Ziffern: Typ der Förderhilfe, Letzte vier Ziffern: Gewicht der Förderhilfe in Gramm\r\n       Beispiel: 020450\r\n       Validierung: `[0-9]{6}` (6 Zeichen)\r\n\r\n## DATA_MATRIX \r\nDatenfeld: Data Matrix \r\n- Validierung: ECC200\r\nBeispiel: 756109025843770000010000000000000000000003489510005501606300\r\nValidierung: ECC200 (Max. 90 Zeichen)"
-  BarCodeSymbology:
-    type: string
-    enum:
-      - CODE_128
-      - DATA_MATRIX
-    description: 'Provides the valid symbologies of a barcode label'
-  BarCode:
-    type: object
-    properties:
-      type:
-        $ref: '#/definitions/BarCodeSymbology'
-        description: 'Provides the valid symbologies of a barcode label.'
-      value:
-        type: string
-        description: 'This element contains the value of the barcode.'
-      status:
-        $ref: '#/definitions/BarCodeStatus'
-        description: 'This element contains the status of the barcode.'
-    required:
-      - status
-    additionalProperties: false
-    description: 'This type contains a barcode.'
   BinOccupancyState:
     type: object
     properties:
@@ -422,7 +340,7 @@ definitions:
         description: "Achtung: Die Punkte in Förderrichtung durchnummeriert, im Unterschied zum CEN-Standard, wo sie im (Gegen-)Uhrzeigersinn ausgerichtet sind.\r\nDie Punkte werden wie folgt ermittelt/ausgegeben:\r\nerster Punkt in Förde-richtung ist der Start-punkt gezählt wird fortlaufend in Förderichtung (nicht Uhrzeigersinn)\r\nalle Angaben sind bezogen auf den Triggernullpunkt (= Schalenanfang) ‚x’ wird in Förderrichtung ermittelt; ‚y’ quer zur Förderrichtung"
     additionalProperties: false
     description: "To specify a region location, the region descriptor LocationT listed subsequently is used. LocationT encloses\r\nno information about the image orientation. The image orientation is specified in the TIFF header. Region\r\ncoordinates are given in pixel and are related to the image origin which corresponds to the upper left corner.\r\nThe coordinates are independent of the TIFF orientation."
-  MailpieceAttr:
+  MailpieceAttributes:
     type: object
     properties:
       type:
@@ -548,22 +466,24 @@ definitions:
       - priority
     additionalProperties: false
     description: 'A positions to sort to.'
+  RecirculationReason:
+    type: string
+    enum:
+      - UNKNOWN
+      - OUTLET_NOT_AVAILABLE
+      - NO_CAPACITY
+      - ITEM_NO_OUTLETGROUP
+      - OUTLET_UNKNOWN
+      - ITEM_STRAY
+    description: "Defines the machine specific recirculation reasons.\nList of values:\n-UNKNOWN: Default enum value to map not supported values.\n-OUTLET_NOT_AVAILABLE: No available chute could be found.\n-NO_CAPACITY: The destination outlet has no more capacity.\n-ITEM_NO_OUTLETGROUP: No sorting information / outlet group has been received for this item.\n-OUTLET_UNKNOWN: Physical destination (outlet) invalid for this sorter.\n-ITEM_STRAY: Stray item detected."
   RecognitionResult:
     type: object
     properties:
-      multipleMailpiecdIdRecognized:
-        type: boolean
-        description: "[DEPRECATED] Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\r\nIf true, multiple identcodes were recognized by the camera."
       informationCarriers:
         type: array
         items:
           $ref: '#/definitions/InformationCarrier'
         description: "Contains the data from the information carrier identified by the reading system.\r\nThe reading system should read and send all available barcodes/matrix codes. The consuming systems will apply further classification and filtering."
-      barCodes:
-        type: array
-        items:
-          $ref: '#/definitions/BarCode'
-        description: "[DEPRECATED] Is replaced by the attribute informationCarriers. Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\r\nContains all barcodes/matrix codes identified by the reading system.\r\nThe reading system should read and send all available barcodes/matrix codes. The consuming systems will apply further classification and filtering."
       location:
         $ref: '#/definitions/Location'
       dimension:
@@ -583,28 +503,29 @@ definitions:
     properties:
       locationKey:
         type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nUnique identifier of the sorting center (ONRP)."
+        description: 'Unique identifier of the sorting center.'
         maxLength: 200
       sortingProcess:
         $ref: '#/definitions/SortingProcess'
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nDefines the sorting process."
+        description: 'Defines the sorting process.'
       processingItemId:
         type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
+        description: 'The machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems.'
         maxLength: 32
-      mailpieceId:
-        type: string
-        description: "[DEPRECATED] Is replaced by the attribute processingItemId. Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
-        maxLength: 200
       sortReasons:
         type: array
         items:
           $ref: '#/definitions/SortReason'
         description: 'The current list of machine specific sort reasons.'
-      idTag:
-        type: string
-        description: "[DEPRECATED] Is replaced by the attribute idTags. Attribute will be removed in future releases when all target systems use the new field idTags.\nRepresents a long living identifier for the mail item"
-        maxLength: 200
+      recirculationReasons:
+        type: array
+        items:
+          $ref: '#/definitions/RecirculationReason'
+        description: 'A list of reasons why a parcel was recirculated'
+      recirculations:
+        $ref: '#/definitions/Int'
+        description: 'The number of recirculations of a Mailpiece on the sorting machine.'
+        minimum: 0
       timestamp:
         type: string
         description: 'Timestamp of data collection.'
@@ -614,6 +535,10 @@ definitions:
         description: 'Refers to a module id as event-source.'
         pattern: '[A-Z]{3}[0-9]{2}'
     required:
+      - locationKey
+      - sortingProcess
+      - processingItemId
+      - recirculations
       - timestamp
       - sourceId
     additionalProperties: false
@@ -628,6 +553,7 @@ definitions:
     enum:
       - UNKNOWN
       - OK
+      - RECIRCULATION
       - MAX_RECIRCULATION
       - ITEM_NO_READ
       - ITEM_MULTIPLE_READ
@@ -643,13 +569,14 @@ definitions:
       - OUTLET_UNKNOWN
       - UNDEFINED_ERROR
       - NO_CAPACITY
+      - ITEM_NO_OUTLETGROUP
       - DIMENSION_ERROR
       - WEIGHT_ERROR
       - SORTPLAN_ERROR
       - DIRECT_SORTING_MODE
       - ITEM_NO_SORTCODE
       - OUTLET_MISSED
-    description: "Defines the machine specific sort reasons.\nList of values:\n- UNKNOWN: Default enum value to map not supported values.\n- OK: Discharge OK. This describes just a \"regular\" item\n- MAX_RECIRCULATION: Item has reached the max allowed amount of recirculations.\n- ITEM_NO_READ: [DEPCRECATED] Item has reached the max allowed amount of scans and the last attempt was a no read.\n- ITEM_MULTIPLE_READ: [DEPCRECATED] Multiple national or international id barcodes could be identified.\n- SCANNER_TIMEOUT: Item has reached the max allowed amount of scans and the last attempt was a \"no answer\" from scanner.\n- ITEM_STRAY: Stray item detected.\n- ITEM_INDUCTION_ERROR: Induction error item detected (occupied twice, wrong tray).\n- ITEM_DISCHARGE_ERROR: Discharge faults.\n- ITEM_ERROR: Item has a Logical error.\n- ITEM_TRACKING_ERROR: item was inducted with tracking fault.\n- ITEM_OCCUPIED_TWICE_ERROR: item was inducted on occupied tray.\n- ITEM_DISAPPEARED: The parcel was lost at unknown location.\n- OUTLET_NOT_AVAILABLE: No available chute could be found.\n- OUTLET_UNKNOWN: Logical destination not defined.\n- UNDEFINED_ERROR: Internal error happened.\n- NO_CAPACITY: The destination outlet has no more capacity.\n- DIMENSION_ERROR: Item oversize. The parcel was discharge, because of dimension exceed.\n- WEIGHT_ERROR: Item too heavy. The parcel was discharge, because of weight exceed.\n- SORTPLAN_ERROR: Sortplan error.\n- DIRECT_SORTING_MODE: Item sorted by the direct sorting mode.\n- ITEM_NO_SORTCODE: No sortcode has been received for this item.\n- OUTLET_MISSED: Sortcode has been updated (push or repetitive requests), physical outlet already passed."
+    description: "Defines the machine specific sort reasons.\nList of values:\n- UNKNOWN: Default enum value to map not supported values.\n- OK: Discharge OK. This describes just a \"regular\" item\n- RECIRCUALTION: The Item was not discharged and was recirculated.\n- MAX_RECIRCULATION: Item has reached the max allowed amount of recirculations.\n- ITEM_NO_READ: [DEPCRECATED] Item has reached the max allowed amount of scans and the last attempt was a no read.\n- ITEM_MULTIPLE_READ: [DEPCRECATED] Multiple national or international id barcodes could be identified.\n- SCANNER_TIMEOUT: Item has reached the max allowed amount of scans and the last attempt was a \"no answer\" from scanner.\n- ITEM_STRAY: Stray item detected.\n- ITEM_INDUCTION_ERROR: Induction error item detected (occupied twice, wrong tray).\n- ITEM_DISCHARGE_ERROR: Discharge faults.\n- ITEM_ERROR: Item has a Logical error.\n- ITEM_TRACKING_ERROR: item was inducted with tracking fault.\n- ITEM_OCCUPIED_TWICE_ERROR: item was inducted on occupied tray.\n- ITEM_DISAPPEARED: The parcel was lost at unknown location.\n- OUTLET_NOT_AVAILABLE: No available chute could be found.\n- OUTLET_UNKNOWN: Logical destination not defined.\n- UNDEFINED_ERROR: Internal error happened.\n- NO_CAPACITY: The destination outlet has no more capacity.\n- ITEM_NO_OUTLETGROUP: No sorting information / outlet group has been received for this item.\n- DIMENSION_ERROR: Item oversize. The parcel was discharge, because of dimension exceed.\n- WEIGHT_ERROR: Item too heavy. The parcel was discharge, because of weight exceed.\n- SORTPLAN_ERROR: Sortplan error.\n- DIRECT_SORTING_MODE: Item sorted by the direct sorting mode.\n- ITEM_NO_SORTCODE: No sortcode has been received for this item.\n- OUTLET_MISSED: Sortcode has been updated (push or repetitive requests), physical outlet already passed."
   SortingProcess:
     type: string
     enum:
@@ -659,70 +586,20 @@ definitions:
       - MANUAL_CODING_BULK
       - MANUAL_CODING_BULK_AUTOMATIC
     description: "Defines the sorting process.\r\nAUTOMATIC Sorted by the sorter\r\nMANUAL_CODING_REJECT Device where a coder manually captures barcodes and enters address information\r\nMANUAL_CODING_LIGHT Device where barcodes barcodes, products and the weight is captured (manual or partially automated)\r\nMANUAL_CODING_BULK Device where barcodes, weight and dimensions and address information for bulky goods are captured or entered (manual or partially automated)\r\nMANUAL_CODING_BULK_AUTOMATIC Device where a coder manually captures barcodes and other specific information for bulky goods"
-  SubmitMailpiecePAR:
-    type: object
-    properties:
-      imageKey:
-        type: string
-        description: 'Key assigned to an image (PicId)'
-        maxLength: 200
-      locationKey:
-        type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nUnique identifier of the sorting center (ONRP)."
-        maxLength: 200
-      sortingProcess:
-        $ref: '#/definitions/SortingProcess'
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nDefines the sorting process."
-      processingItemId:
-        type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
-        maxLength: 32
-      mailpieceId:
-        type: string
-        description: "[DEPRECATED] Is replaced by the attribute processingItemId. Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\r\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
-        maxLength: 200
-      idTag:
-        type: string
-        description: "[DEPRECATED] Is replaced by the attribute idTags. Attribute will be removed in future releases when all target systems use the new field idTags.\r\nRepresents a long living identifier for the mail item"
-        maxLength: 200
-      timestamp:
-        type: string
-        description: 'Timestamp of data collection.'
-        format: date-time
-      sourceId:
-        type: string
-        description: 'Refers to a module id as event-source.'
-        pattern: '[A-Z]{3}[0-9]{2}'
-      mpAttr:
-        $ref: '#/definitions/MailpieceAttr'
-        description: "The MailpieceAttrT type is assigned to the element mp_attr. It provides basic\r\nmailpiece related information:\r\n\r\n- the kind of the mail item\r\n- the mailclass of the mail item; important for the ED because it and may affect the address recognition\r\n- the scanned faces of the mail item. The FaceSetT type is assigned to faces and allows providing a sequence of faces.\r\n   The FaceSetT types allows to link a face with the corresponding image by a page attribute.\r\n- a preknowledge result if a barcode reader or some other type of Enrichment Device is directly attached to the MC.\r\n   This result will be in accordance with the result type specified in the IC-ED interface."
-    additionalProperties: false
-    description: ""
-    required:
-      - timestamp
-      - sourceId
   SubmitMailpiece:
     type: object
     properties:
       locationKey:
         type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nUnique identifier of the sorting center (ONRP)."
+        description: 'Unique identifier of the sorting center (ONRP).'
         maxLength: 200
       sortingProcess:
         $ref: '#/definitions/SortingProcess'
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nDefines the sorting process."
+        description: 'Defines the sorting process.'
       processingItemId:
         type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
+        description: 'The machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems.'
         maxLength: 32
-      mailpieceId:
-        type: string
-        description: "[DEPRECATED] Is replaced by the attribute processingItemId. Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\r\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
-        maxLength: 200
-      idTag:
-        type: string
-        description: "[DEPRECATED] Is replaced by the attribute idTags. Attribute will be removed in future releases when all target systems use the new field idTags.\r\nRepresents a long living identifier for the mail item"
-        maxLength: 200
       timestamp:
         type: string
         description: 'Timestamp of data collection.'
@@ -731,10 +608,13 @@ definitions:
         type: string
         description: 'Refers to a module id as event-source.'
         pattern: '[A-Z]{3}[0-9]{2}'
-      mpAttr:
-        $ref: '#/definitions/MailpieceAttr'
-        description: "The MailpieceAttrT type is assigned to the element mp_attr. It provides basic\r\nmailpiece related information:\r\n\r\n- the kind of the mail item\r\n- the mailclass of the mail item; important for the ED because it and may affect the address recognition\r\n- the scanned faces of the mail item. The FaceSetT type is assigned to faces and allows providing a sequence of faces.\r\n   The FaceSetT types allows to link a face with the corresponding image by a page attribute.\r\n- a preknowledge result if a barcode reader or some other type of Enrichment Device is directly attached to the MC.\r\n   This result will be in accordance with the result type specified in the IC-ED interface."
+      mailpieceAttributes:
+        $ref: '#/definitions/MailpieceAttributes'
+        description: "Provides basic mailpiece related information:\r\n\r\n- the kind of the mail item\r\n- the mailclass of the mail item; important for the ED because it and may affect the address recognition\r\n- the scanned faces of the mail item. The FaceSetT type is assigned to faces and allows providing a sequence of faces.\r\n   The FaceSetT types allows to link a face with the corresponding image by a page attribute.\r\n- a preknowledge result if a barcode reader or some other type of Enrichment Device is directly attached to the MC.\r\n   This result will be in accordance with the result type specified in the IC-ED interface."
     required:
+      - locationKey
+      - sortingProcess
+      - processingItemId
       - timestamp
       - sourceId
     additionalProperties: false
@@ -768,28 +648,24 @@ definitions:
     properties:
       locationKey:
         type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nUnique identifier of the sorting center (ONRP)."
+        description: 'Unique identifier of the sorting center.'
         maxLength: 200
       sortingProcess:
         $ref: '#/definitions/SortingProcess'
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nDefines the sorting process."
+        description: 'Defines the sorting process.'
       processingItemId:
         type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
+        description: 'The machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems.'
         maxLength: 32
-      mailpieceId:
-        type: string
-        description: "[DEPRECATED] Is replaced by the attribute processingItemId. Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
-        maxLength: 200
       timestamp:
         $ref: '#/definitions/DateTime'
         description: 'Timestamp of data collection.'
       addressResult:
         $ref: '#/definitions/AddressResult'
-      weight:
-        $ref: '#/definitions/Weight'
-        description: "[DEPRECATED] Only used by the sorting machine in the legacy parcel center\nParcel weight."
     required:
+      - locationKey
+      - sortingProcess
+      - processingItemId
       - timestamp
     additionalProperties: false
     description: 'This type contains the result for a mail piece that has been determined by the RC System.'
@@ -798,23 +674,15 @@ definitions:
     properties:
       locationKey:
         type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nUnique identifier of the sorting center (ONRP)."
+        description: 'Unique identifier of the sorting center (ONRP).'
         maxLength: 200
       sortingProcess:
         $ref: '#/definitions/SortingProcess'
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nDefines the sorting process."
+        description: 'Defines the sorting process.'
       processingItemId:
         type: string
-        description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
+        description: 'The machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems.'
         maxLength: 32
-      mailpieceId:
-        type: string
-        description: "[DEPRECATED] Is replaced by the attribute processingItemId. Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
-        maxLength: 200
-      idTag:
-        type: string
-        description: "Represents a long living identifier for the mail item\n[DEPRECATED] Is replaced by the attribute idTags. Attribute will be removed in future releases when all target systems use the new field idTags."
-        maxLength: 200
       timestamp:
         type: string
         description: 'Timestamp of data collection.'
@@ -841,10 +709,10 @@ definitions:
       sortReason:
         $ref: '#/definitions/SortReason'
         description: 'Only used when the sorting machine decided to sort the mail piece based on the sort reason.'
-      recirculations:
-        type: integer
-        description: 'The number of recirculations of the mail item on the sorter.'
     required:
+      - locationKey
+      - sortingProcess
+      - processingItemId
       - timestamp
       - sourceId
       - sortBin
