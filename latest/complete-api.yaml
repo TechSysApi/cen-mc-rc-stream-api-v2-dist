@@ -5,7 +5,7 @@ info:
   contact:
     name: 'Kay Herzam (Swiss Post)'
     email: kay.herzam@post.ch
-  version: 5.1.0-feature-add-location-key.2
+  version: 5.1.0-feature-add-location-key.3
 host: 'server:8080'
 basePath: mqtt
 paths:
@@ -141,12 +141,6 @@ definitions:
       domicilHouseKey:
         $ref: '#/definitions/Long'
         description: "[This is no CEN-Field]\nIdentifiziert die Domiziladresse (DHKEY) der KDPID (personAddressKey)\nKann unterschiedlich sein bei Umleitungen usw."
-      personAddressKey:
-        $ref: '#/definitions/Long'
-        description: "[This is no CEN-Field]\nIdentifiziert eine Person an einer (aktuellen) Domiziladresse eindeutig.\nÜber die History können die Wohnungswechsel der Person nachverfolgt werden.\nWenn Person mehrerer Häuser hat, kann sie auch mehrere Keys haben.\nSynonym zum AMP-Key"
-      streetKey:
-        $ref: '#/definitions/Int'
-        description: "[This is no CEN-Field]\nDie Erfassung liefert die Nummer der Strasse in der Adresse des Pakets.\nFür jede Strasse, bei der ein Paketbote alle oder einen Teil der Pakete zustellt, gibt es in ZUBOFI eine Strassennummer. Die Erfassung liefert diese Nummer.\nBeispiel: 206190\n\nKey of the street"
       sortCode:
         type: string
         description: "[This is no CEN-Field]\nProprietary Swiss Post Sort Code\n\nAll numbers:\n  __________ _____________________ ___________ _____ ________________\n| Postcode | Post Code Extension | Code Type | BBZ | SequenceNumber |\n|     4    |           2         |      1    |  3  |        4       |\n\ni.e. 17620013610850"
@@ -490,11 +484,11 @@ definitions:
         description: 'The reason why machine requests a new destination for the mailpiece.'
       recirculations:
         $ref: '#/definitions/Int'
-        description: 'The number of recirculations of a Mailpiece on the sorting machine.'
+        description: "The number of recirculations of a Mailpiece on the sorting machine.\nIncremented by the machine whenever the Mailpiece completes a full round.\nStarts with 0."
         minimum: 0
-      outlet:
+      lastOutlet:
         $ref: '#/definitions/Outlet'
-        description: "Outlet associated to the request reason.\nMust be set by the machine, whenever the request reason refers to an outlet, e.g. OUTLET_NOT_AVAILABLE, OUTLET_UNKNOWN."
+        description: "Last outlet of an outlet group associated to the request reason.\nMust be set by the machine, whenever the request reason refers to an outlet, e.g. OUTLET_NOT_AVAILABLE, OUTLET_UNKNOWN."
       timestamp:
         type: string
         description: 'Timestamp of data collection.'
@@ -520,15 +514,18 @@ definitions:
       - ITEM_INDUCTION_ERROR
       - ITEM_DISCHARGE_ERROR
       - ITEM_ERROR
+      - ITEM_TRACKING_ERROR
+      - ITEM_STRAY
+      - ITEM_OCCUPIED_TWICE_ERROR
+      - ITEM_NO_OUTLETGROUP
+      - ITEM_OUTLETGROUP_REQUIRED
       - OUTLET_NOT_AVAILABLE
       - OUTLET_UNKNOWN
-      - UNDEFINED_ERROR
       - OUTLET_NO_CAPACITY
-      - ITEM_NO_OUTLETGROUP
-      - DIRECT_SORTING_MODE
       - OUTLET_MISSED
-      - ITEM_OUTLETGROUP_REQUIRED
-    description: "The reason why the machine requests mailpiece attributes.\nList of values:\n- SCANNER_TIMEOUT: Item has reached the max allowed amount of scans and the last attempt was a \"no answer\" from scanner.\n- ITEM_INDUCTION_ERROR: Induction error item detected (occupied twice, wrong tray).\n- ITEM_DISCHARGE_ERROR: Discharge faults.\n- ITEM_ERROR: Item has a Logical error.\n- OUTLET_NOT_AVAILABLE: No available chute could be found.\n- OUTLET_UNKNOWN: Logical destination not defined.\n- UNDEFINED_ERROR: Internal error happened.\n- OUTLET_NO_CAPACITY: The destination outlet has no more capacity.\n- ITEM_NO_OUTLETGROUP: No sorting information / outlet group has been received for this item.\n- DIRECT_SORTING_MODE: Item sorted by the direct sorting mode.\n- OUTLET_MISSED: Sortcode has been updated (push or repetitive requests), physical outlet already passed.\n- ITEM_OUTLETGROUP_REQUIRED: the machine must make a decision where to"
+      - DIRECT_SORTING_MODE
+      - UNDEFINED_ERROR
+    description: "The reason why the machine requests mailpiece attributes.\nList of values:\n- SCANNER_TIMEOUT: Item has reached the max allowed amount of scans and the last attempt was a \"no answer\" from scanner.\n- ITEM_INDUCTION_ERROR: Induction error item detected (occupied twice, wrong tray).\n- ITEM_DISCHARGE_ERROR: Discharge faults.\n- ITEM_ERROR: Item has a Logical error.\n- ITEM_TRACKING_ERROR: item was inducted with tracking fault.\n- ITEM_STRAY: Stray item detected.\n- ITEM_OCCUPIED_TWICE_ERROR: item was inducted on occupied tray.\n- ITEM_NO_OUTLETGROUP: No sorting information / outlet group has been received for this item.\n- ITEM_OUTLETGROUP_REQUIRED: The machine requires an outlet group.\n- OUTLET_NOT_AVAILABLE: No available chute could be found.\n- OUTLET_UNKNOWN: Logical destination not defined.\n- OUTLET_NO_CAPACITY: The destination outlet has no more capacity.\n- OUTLET_MISSED: Sortcode has been updated (push or repetitive requests), physical outlet already passed.\n- DIRECT_SORTING_MODE: Item sorted by the direct sorting mode.\n- UNDEFINED_ERROR: Internal error happened."
   ShapeType:
     type: string
     enum:
@@ -538,14 +535,11 @@ definitions:
     type: string
     enum:
       - OK
-      - MAX_RECIRCULATION
-      - ITEM_STRAY
-      - ITEM_TRACKING_ERROR
-      - ITEM_OCCUPIED_TWICE_ERROR
+      - FALLBACK_OUTLET
       - ITEM_DISAPPEARED
       - DIMENSION_ERROR
       - WEIGHT_ERROR
-    description: "Defines the machine specific sort reasons.\nList of values:\n- OK: Discharge OK. This describes just a \"regular\" item\n- MAX_RECIRCULATION: Item has reached the max allowed amount of recirculations.\n- ITEM_STRAY: Stray item detected.\n- ITEM_TRACKING_ERROR: item was inducted with tracking fault.\n- ITEM_OCCUPIED_TWICE_ERROR: item was inducted on occupied tray.\n- ITEM_DISAPPEARED: The parcel was lost at unknown location.\n- DIMENSION_ERROR: Item oversize. The parcel was discharge, because of dimension exceed.\n- WEIGHT_ERROR: Item too heavy. The parcel was discharge, because of weight exceed."
+    description: "Defines the machine specific sort reasons.\nList of values:\n- OK: Discharge OK. This describes just a \"regular\" item.\n- FALLBACK_OUTLET: Item has reached the max allowed amount of recirculations or end of line on a linear sorter.\n- ITEM_DISAPPEARED: The parcel was lost at unknown location.\n- DIMENSION_ERROR: Item oversize. The parcel was discharge, because of dimension exceed.\n- WEIGHT_ERROR: Item too heavy. The parcel was discharge, because of weight exceed."
   SortingProcess:
     type: string
     enum:
@@ -664,14 +658,11 @@ definitions:
         type: integer
         description: 'Weight of the mail piece in [g].'
         maxLength: 6
-      sortBin:
+      outlet:
+        $ref: '#/definitions/Outlet'
+        description: 'The outlet to which the machine physically sorted the mail piece.'
         type: integer
-        description: "The name of the outlet to which the machine physically sorted the mail piece.\nThe outlet name is a 4 digit number."
         maxLength: 4
-      code:
-        type: integer
-        description: "The destination sort code is the outlet group name (Virtuelles Ziel) assigned to the mail piece.\nSpecific values are defined on a per-program basis."
-        maxLength: 3
       finalSorted:
         type: boolean
         description: "A boolean value indicating whether or not processing for a mail piece is complete.\n\n- false: mail piece was discharged\n- true: Discharging was verified"
@@ -684,8 +675,9 @@ definitions:
       - processingItemId
       - timestamp
       - sourceId
-      - sortBin
+      - outlet
       - finalSorted
+      - sortReason
     additionalProperties: false
     description: "# GER-TODO\n\nDer Dienst ermöglicht der MC, aktualisierte oder zusätzliche Informationen in Bezug auf eine Postsendung zu übertragen,\ndie dem RC- System bereits vorgelegt worden ist. Solange sich die Postsendung zur Verarbeitung in der Maschine befindet, kann dieser\nDienst von der MC mehrfach ausgeführt werden.\nFür einen Sortierablauf ohne das Einscannen von Bildern (z.B.stationäre Bearbeitung im Zielfrachtzentrum oder Sortierung in der\nReihenfolge der Zustellung) kann mit diesem Dienst die Behälternummer zur Verfügung gestellt werden, in den die\nPostsendung physikalisch einsortiert wird; für diesen Fall muss kein submitMailpiece ausgeführt werden."
   WeightMeasurementState:
