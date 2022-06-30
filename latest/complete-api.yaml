@@ -5,7 +5,7 @@ info:
   contact:
     name: 'Kay Herzam (Swiss Post)'
     email: kay.herzam@post.ch
-  version: 5.0.1
+  version: 5.0.2
 host: 'server:8080'
 basePath: mqtt
 paths:
@@ -30,7 +30,7 @@ paths:
           default: '01'
       responses:
         default:
-          schema: {$ref: '#/definitions/SubmitMailpiece'}
+          schema: {$ref: 'SubmitMailpiece'}
   'cen-mc-rc/v1/machinePAR/submit-mailpiece/{srcSystem}/{srcInstance}':
     post:
       summary: 'ATG-3 Submit Mailpiece (Sensordaten empfangen)'
@@ -52,7 +52,7 @@ paths:
           default: '01'
       responses:
         default:
-          schema: {$ref: '#/definitions/SubmitMailpiecePAR'}
+          schema: {$ref: 'SubmitMailpiecePAR'}
   'cen-mc-rc/v1/machine/request-mailpiece-attributes/{srcSystem}/{srcInstance}/{conversationId}':
     post:
       summary: 'ATG-4 Request Mailpiece Attributes (Sortierziel berechnen)'
@@ -80,7 +80,7 @@ paths:
           default: '12345'
       responses:
         default:
-          schema: {$ref: '#/definitions/RequestMailpieceAttributes'}
+          schema: {$ref: 'RequestMailpieceAttributes'}
   'cen-mc-rc/v1/machine/update-mailpiece-attributes/{srcSystem}/{srcInstance}':
     post:
       summary: 'ATG-5 Update Mailpiece Attributes (Sortierergebnis empfangen)'
@@ -102,7 +102,7 @@ paths:
           default: '01'
       responses:
         default:
-          schema: {$ref: '#/definitions/UpdateMailpieceAttributes'}
+          schema: {$ref: 'UpdateMailpieceAttributes'}
   'cen-mc-rc/v1/coding/transmit-mailpiece-attributes/{srcSystem}/{srcInstance}/{dstSystem}/{dstInstance}/{conversationId}':
     post:
       summary: 'ATG-4 Transmit Mailpiece Attributes (Sortierziel berechnen)'
@@ -142,7 +142,7 @@ paths:
           default: '12345'
       responses:
         default:
-          schema: {$ref: '#/definitions/TransmitMailpieceAttributes'}
+          schema: {$ref: 'TransmitMailpieceAttributes'}
   'cen-mc-rc/v1/coding/transmit-mailpiece-attributes/{srcSystem}/{srcInstance}':
     post:
       summary: 'ATG-4 Transmit Mailpiece Attributes (Sortierziel berechnen)'
@@ -164,7 +164,7 @@ paths:
           default: '01'
       responses:
         default:
-          schema: {$ref: '#/definitions/TransmitMailpieceAttributes'}
+          schema: {$ref: 'TransmitMailpieceAttributes'}
 definitions:
   Int:
     type: integer
@@ -179,7 +179,7 @@ definitions:
     type: object
     properties:
       outletGroup:
-        $ref: '#/definitions/OutletGroup'
+        $ref: 'OutletGroup'
         description: "The outlet group containing the outlets\n[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers."
       code:
         type: integer
@@ -191,30 +191,30 @@ definitions:
           type: string
         description: "This string element contains a reason why the RC System was unable to determine a result or has identified a special case.\nThe sorting machine needs to recognize the reject reason in order to sort the parcel to a special sortbin."
       parcelHouseKey:
-        $ref: '#/definitions/Long'
+        $ref: 'Long'
         description: "Below this remark follow non-cen fields  \n [This is no CEN-Field]\nIdentifiziert die Adresse, welche auf dem Paket aufgedruckt ist.\nDieser „Paket-HausKey“ kann eine Domizil Adresse, eine Postfachadresse, oder eine Pickpost Adresse sein."
       domicilHouseKey:
-        $ref: '#/definitions/Long'
+        $ref: 'Long'
         description: "[This is no CEN-Field]\nIdentifiziert die Domiziladresse (DHKEY) der KDPID (personAddressKey)\nKann unterschiedlich sein bei Umleitungen usw."
       personAddressKey:
-        $ref: '#/definitions/Long'
+        $ref: 'Long'
         description: "[This is no CEN-Field]\nIdentifiziert eine Person an einer (aktuellen) Domiziladresse eindeutig.\nÜber die History können die Wohnungswechsel der Person nachverfolgt werden.\nWenn Person mehrerer Häuser hat, kann sie auch mehrere Keys haben.\nSynonym zum AMP-Key"
       addressPostcode6:
-        $ref: '#/definitions/Int'
+        $ref: 'Int'
         description: "[This is no CEN-Field]\n(DEPRECATED!)\nDie Erfassung liefert die 6-stellige Postleitzahl der auf dem Paket adressierten Adresse\nSechstellige PLZ (PLZ6), welche in der Sortierung verwendet wird.\nBesteht aus vierstelliger PLZ + zwei Stellen für dienstliche Angaben\n(AMPplus: Postleitzahl)\n\nNachfolgend erklärt an dem Beispiel: 188070 - Bex Paketfiliale\n\nGeografische Lage (erste vier Zahlen):\n1 = Leitkreis\n18 = Leitgebiet\n188 = Laufstrecke\n1880 = Bex\n\nMögliche dienstliche Angaben (letzte zwei Zahlen)\n56, 57 = Zoll, Import/Export\n60 = Briefzustellung\n61 = Postfach\n70 = Paketzustellung\n72 = Expresszustellung\n74 = Postautodienst\n75 = Kaserne"
         maxLength: 6
       streetKey:
-        $ref: '#/definitions/Int'
+        $ref: 'Int'
         description: "[This is no CEN-Field]\nDie Erfassung liefert die Nummer der Strasse in der Adresse des Pakets.\nFür jede Strasse, bei der ein Paketbote alle oder einen Teil der Pakete zustellt, gibt es in ZUBOFI eine Strassennummer. Die Erfassung liefert diese Nummer.\nBeispiel: 206190\n\nKey of the street"
       houseNumber:
-        $ref: '#/definitions/Int'
+        $ref: 'Int'
         description: "[This is no CEN-Field]\nDie Erfassung liefert die Hausnummer der auf dem Paket adressierten Adresse"
       houseNumberExtension:
         type: string
         description: "[This is no CEN-Field]\nDie Erfassung liefert den Hausnummerzusatz der auf dem Paket adressierten Adresse (alt. houseNumberAddOn)"
         maxLength: 6
       parcelAddressType:
-        $ref: '#/definitions/AddressType'
+        $ref: 'AddressType'
         description: "[This is no CEN-Field]\n(DEPRECATED!)\nBeschreibt den Adresstyp vom Paket."
       destinationRegion:
         type: string
@@ -257,13 +257,13 @@ definitions:
     type: object
     properties:
       type:
-        $ref: '#/definitions/BarCodeSymbology'
+        $ref: 'BarCodeSymbology'
         description: 'Provides the valid symbologies of a barcode label.'
       value:
         type: string
         description: 'This element contains the value of the barcode.'
       status:
-        $ref: '#/definitions/BarCodeStatus'
+        $ref: 'BarCodeStatus'
         description: 'This element contains the status of the barcode.'
     required:
       - status
@@ -310,11 +310,11 @@ definitions:
     type: object
     properties:
       measurementResult:
-        $ref: '#/definitions/DimensionMeasurementResultType'
+        $ref: 'DimensionMeasurementResultType'
       measurementRange:
-        $ref: '#/definitions/DimensionMeasurementRangeType'
+        $ref: 'DimensionMeasurementRangeType'
       itemSizeClassification:
-        $ref: '#/definitions/ItemSizeClassificationType'
+        $ref: 'ItemSizeClassificationType'
     required:
       - measurementResult
       - measurementRange
@@ -334,14 +334,14 @@ definitions:
         type: integer
         description: 'Height in [mm].'
       state:
-        $ref: '#/definitions/DimensionMeasurementState'
+        $ref: 'DimensionMeasurementState'
     additionalProperties: false
     description: 'Dimension measurement of the mail piece'
   InformationCarrier:
     type: object
     properties:
       symbology:
-        $ref: '#/definitions/Symbology'
+        $ref: 'Symbology'
         description: 'Symbology of an information carrier'
       value:
         type: string
@@ -405,20 +405,20 @@ definitions:
         type: integer
         description: 'Realvolumen / Boxvolumen in % ganzzahlig'
       shape:
-        $ref: '#/definitions/ShapeType'
+        $ref: 'ShapeType'
         description: 'Die Paketform.'
       state:
-        $ref: '#/definitions/LegalForTradeState'
+        $ref: 'LegalForTradeState'
     additionalProperties: false
     description: 'Customs information'
   Location:
     type: object
     properties:
       face:
-        $ref: '#/definitions/MailpieceFace'
+        $ref: 'MailpieceFace'
         description: "# GER-TODO\r\nZur Erkennung auf welcher Seite (welche Kamera) der Identcode gelesen wurde (z.B. für VCS…).\r\nDer Wert ist nur auf den Identcode (national) bezogen."
       polygon:
-        $ref: '#/definitions/Polygon'
+        $ref: 'Polygon'
         description: "Achtung: Die Punkte in Förderrichtung durchnummeriert, im Unterschied zum CEN-Standard, wo sie im (Gegen-)Uhrzeigersinn ausgerichtet sind.\r\nDie Punkte werden wie folgt ermittelt/ausgegeben:\r\nerster Punkt in Förde-richtung ist der Start-punkt gezählt wird fortlaufend in Förderichtung (nicht Uhrzeigersinn)\r\nalle Angaben sind bezogen auf den Triggernullpunkt (= Schalenanfang) ‚x’ wird in Förderrichtung ermittelt; ‚y’ quer zur Förderrichtung"
     additionalProperties: false
     description: "To specify a region location, the region descriptor LocationT listed subsequently is used. LocationT encloses\r\nno information about the image orientation. The image orientation is specified in the TIFF header. Region\r\ncoordinates are given in pixel and are related to the image origin which corresponds to the upper left corner.\r\nThe coordinates are independent of the TIFF orientation."
@@ -426,10 +426,10 @@ definitions:
     type: object
     properties:
       type:
-        $ref: '#/definitions/MailpieceType'
+        $ref: 'MailpieceType'
         description: 'Defines the type of the mail item.'
       preknowledge:
-        $ref: '#/definitions/RecognitionResult'
+        $ref: 'RecognitionResult'
         description: "Provides preknowledge to the RC System, e.g. a barcode\r\nresult if a barcode reader is integrated into the machine."
     required:
       - type
@@ -476,17 +476,17 @@ definitions:
         description: "A unique key inside the sort plan to identify this occurrence of OutletGroup\nPrimary key 🔑"
         maxLength: 200
       specialType:
-        $ref: '#/definitions/OutletArea'
+        $ref: 'OutletArea'
         description: 'Defines the usage made of the outlet group.'
       outlets:
         type: array
         items:
-          $ref: '#/definitions/Outlet'
+          $ref: 'Outlet'
         description: "The list of physical outlets to be used.\ni.e. Endstellen"
       positions:
         type: array
         items:
-          $ref: '#/definitions/Position'
+          $ref: 'Position'
         description: "The list of positions to be used.\ni.e. RX-Stellplatz"
     required:
       - name
@@ -520,7 +520,7 @@ definitions:
       dot:
         type: array
         items:
-          $ref: '#/definitions/PolygonDot'
+          $ref: 'PolygonDot'
     required:
       - dot
     additionalProperties: false
@@ -540,7 +540,7 @@ definitions:
         description: "The outlet name, where this position belongs to.\nThis is only needed, if this position is related to an outlet.\ni.e. for bulk sorting, no outlet is available."
         maxLength: 200
       priority:
-        $ref: '#/definitions/Int'
+        $ref: 'Int'
         description: "Priority of the Position.\nThis is used for the distribution strategy.\n0 = Low priority"
         minimum: 0
     required:
@@ -557,26 +557,26 @@ definitions:
       informationCarriers:
         type: array
         items:
-          $ref: '#/definitions/InformationCarrier'
+          $ref: 'InformationCarrier'
         description: "Contains the data from the information carrier identified by the reading system.\r\nThe reading system should read and send all available barcodes/matrix codes. The consuming systems will apply further classification and filtering."
       barCodes:
         type: array
         items:
-          $ref: '#/definitions/BarCode'
+          $ref: 'BarCode'
         description: "[DEPRECATED] Is replaced by the attribute informationCarriers. Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\r\nContains all barcodes/matrix codes identified by the reading system.\r\nThe reading system should read and send all available barcodes/matrix codes. The consuming systems will apply further classification and filtering."
       location:
-        $ref: '#/definitions/Location'
+        $ref: 'Location'
       dimension:
-        $ref: '#/definitions/Dimension'
+        $ref: 'Dimension'
         description: 'dimension of the mail piece.'
       weight:
-        $ref: '#/definitions/Weight'
+        $ref: 'Weight'
         description: 'weight of the mail piece.'
       legalForTrade:
-        $ref: '#/definitions/LegalForTrade'
+        $ref: 'LegalForTrade'
         description: 'Legal For Trade information.'
       binOccupancy:
-        $ref: '#/definitions/BinOccupancyState'
+        $ref: 'BinOccupancyState'
     additionalProperties: false
   RequestMailpieceAttributes:
     type: object
@@ -586,7 +586,7 @@ definitions:
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nUnique identifier of the sorting center (ONRP)."
         maxLength: 200
       sortingProcess:
-        $ref: '#/definitions/SortingProcess'
+        $ref: 'SortingProcess'
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nDefines the sorting process."
       processingItemId:
         type: string
@@ -599,7 +599,7 @@ definitions:
       sortReasons:
         type: array
         items:
-          $ref: '#/definitions/SortReason'
+          $ref: 'SortReason'
         description: 'The current list of machine specific sort reasons.'
       idTag:
         type: string
@@ -671,7 +671,7 @@ definitions:
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nUnique identifier of the sorting center (ONRP)."
         maxLength: 200
       sortingProcess:
-        $ref: '#/definitions/SortingProcess'
+        $ref: 'SortingProcess'
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nDefines the sorting process."
       processingItemId:
         type: string
@@ -694,7 +694,7 @@ definitions:
         description: 'Refers to a module id as event-source.'
         pattern: '[A-Z]{3}[0-9]{2}'
       mpAttr:
-        $ref: '#/definitions/MailpieceAttr'
+        $ref: 'MailpieceAttr'
         description: "The MailpieceAttrT type is assigned to the element mp_attr. It provides basic\r\nmailpiece related information:\r\n\r\n- the kind of the mail item\r\n- the mailclass of the mail item; important for the ED because it and may affect the address recognition\r\n- the scanned faces of the mail item. The FaceSetT type is assigned to faces and allows providing a sequence of faces.\r\n   The FaceSetT types allows to link a face with the corresponding image by a page attribute.\r\n- a preknowledge result if a barcode reader or some other type of Enrichment Device is directly attached to the MC.\r\n   This result will be in accordance with the result type specified in the IC-ED interface."
     additionalProperties: false
     description: ""
@@ -709,7 +709,7 @@ definitions:
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nUnique identifier of the sorting center (ONRP)."
         maxLength: 200
       sortingProcess:
-        $ref: '#/definitions/SortingProcess'
+        $ref: 'SortingProcess'
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\r\nDefines the sorting process."
       processingItemId:
         type: string
@@ -732,7 +732,7 @@ definitions:
         description: 'Refers to a module id as event-source.'
         pattern: '[A-Z]{3}[0-9]{2}'
       mpAttr:
-        $ref: '#/definitions/MailpieceAttr'
+        $ref: 'MailpieceAttr'
         description: "The MailpieceAttrT type is assigned to the element mp_attr. It provides basic\r\nmailpiece related information:\r\n\r\n- the kind of the mail item\r\n- the mailclass of the mail item; important for the ED because it and may affect the address recognition\r\n- the scanned faces of the mail item. The FaceSetT type is assigned to faces and allows providing a sequence of faces.\r\n   The FaceSetT types allows to link a face with the corresponding image by a page attribute.\r\n- a preknowledge result if a barcode reader or some other type of Enrichment Device is directly attached to the MC.\r\n   This result will be in accordance with the result type specified in the IC-ED interface."
     required:
       - timestamp
@@ -771,7 +771,7 @@ definitions:
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nUnique identifier of the sorting center (ONRP)."
         maxLength: 200
       sortingProcess:
-        $ref: '#/definitions/SortingProcess'
+        $ref: 'SortingProcess'
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nDefines the sorting process."
       processingItemId:
         type: string
@@ -782,12 +782,12 @@ definitions:
         description: "[DEPRECATED] Is replaced by the attribute processingItemId. Attribute will be removed in future releases after WESort is rolled out in all sorting centers.\nThe machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems."
         maxLength: 200
       timestamp:
-        $ref: '#/definitions/DateTime'
+        $ref: 'DateTime'
         description: 'Timestamp of data collection.'
       addressResult:
-        $ref: '#/definitions/AddressResult'
+        $ref: 'AddressResult'
       weight:
-        $ref: '#/definitions/Weight'
+        $ref: 'Weight'
         description: "[DEPRECATED] Only used by the sorting machine in the legacy parcel center\nParcel weight."
     required:
       - timestamp
@@ -801,7 +801,7 @@ definitions:
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nUnique identifier of the sorting center (ONRP)."
         maxLength: 200
       sortingProcess:
-        $ref: '#/definitions/SortingProcess'
+        $ref: 'SortingProcess'
         description: "[ACTION] Attribute is required in future releases after WESort is rolled out in all sorting centers.\nDefines the sorting process."
       processingItemId:
         type: string
@@ -839,7 +839,7 @@ definitions:
         type: boolean
         description: "A boolean value indicating whether or not processing for a mail piece is complete.\n\n- false: mail piece was discharged\n- true: Discharging was verified"
       sortReason:
-        $ref: '#/definitions/SortReason'
+        $ref: 'SortReason'
         description: 'Only used when the sorting machine decided to sort the mail piece based on the sort reason.'
       recirculations:
         type: integer
@@ -897,7 +897,7 @@ definitions:
         type: string
         description: 'The id of the scale (e.g. HAE-024)'
       state:
-        $ref: '#/definitions/WeightMeasurementState'
+        $ref: 'WeightMeasurementState'
         description: 'Weighing errors'
     additionalProperties: false
     description: 'Weight measurement of the mail piece.'
