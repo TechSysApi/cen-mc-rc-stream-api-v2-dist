@@ -5,7 +5,7 @@ info:
   contact:
     name: 'Kay Herzam (Swiss Post)'
     email: kay.herzam@post.ch
-  version: 5.1.0-feature-add-location-key.1
+  version: 5.1.0-feature-add-location-key.2
 host: 'server:8080'
 basePath: mqtt
 paths:
@@ -130,10 +130,6 @@ definitions:
       outletGroup:
         $ref: '#/definitions/OutletGroup'
         description: 'The outlet group containing the outlets.'
-      code:
-        type: integer
-        description: "The destination sort code is the outlet group name (Virtuelles Ziel) assigned to the mail piece.\nSpecific values are defined on a per-program basis."
-        maxLength: 3
       rejectReasons:
         type: array
         items:
@@ -148,29 +144,14 @@ definitions:
       personAddressKey:
         $ref: '#/definitions/Long'
         description: "[This is no CEN-Field]\nIdentifiziert eine Person an einer (aktuellen) Domiziladresse eindeutig.\nÜber die History können die Wohnungswechsel der Person nachverfolgt werden.\nWenn Person mehrerer Häuser hat, kann sie auch mehrere Keys haben.\nSynonym zum AMP-Key"
-      addressPostcode6:
-        $ref: '#/definitions/Int'
-        description: "[This is no CEN-Field]\n(DEPRECATED!)\nDie Erfassung liefert die 6-stellige Postleitzahl der auf dem Paket adressierten Adresse\nSechstellige PLZ (PLZ6), welche in der Sortierung verwendet wird.\nBesteht aus vierstelliger PLZ + zwei Stellen für dienstliche Angaben\n(AMPplus: Postleitzahl)\n\nNachfolgend erklärt an dem Beispiel: 188070 - Bex Paketfiliale\n\nGeografische Lage (erste vier Zahlen):\n1 = Leitkreis\n18 = Leitgebiet\n188 = Laufstrecke\n1880 = Bex\n\nMögliche dienstliche Angaben (letzte zwei Zahlen)\n56, 57 = Zoll, Import/Export\n60 = Briefzustellung\n61 = Postfach\n70 = Paketzustellung\n72 = Expresszustellung\n74 = Postautodienst\n75 = Kaserne"
-        maxLength: 6
       streetKey:
         $ref: '#/definitions/Int'
         description: "[This is no CEN-Field]\nDie Erfassung liefert die Nummer der Strasse in der Adresse des Pakets.\nFür jede Strasse, bei der ein Paketbote alle oder einen Teil der Pakete zustellt, gibt es in ZUBOFI eine Strassennummer. Die Erfassung liefert diese Nummer.\nBeispiel: 206190\n\nKey of the street"
-      houseNumber:
-        $ref: '#/definitions/Int'
-        description: "[This is no CEN-Field]\nDie Erfassung liefert die Hausnummer der auf dem Paket adressierten Adresse"
-      houseNumberExtension:
-        type: string
-        description: "[This is no CEN-Field]\nDie Erfassung liefert den Hausnummerzusatz der auf dem Paket adressierten Adresse (alt. houseNumberAddOn)"
-        maxLength: 6
-      destinationRegion:
-        type: string
-        description: "[This is no CEN-Field]\nDestination region of the mailpiece\nZielregion, zB. HAE1"
       sortCode:
         type: string
         description: "[This is no CEN-Field]\nProprietary Swiss Post Sort Code\n\nAll numbers:\n  __________ _____________________ ___________ _____ ________________\n| Postcode | Post Code Extension | Code Type | BBZ | SequenceNumber |\n|     4    |           2         |      1    |  3  |        4       |\n\ni.e. 17620013610850"
     required:
       - outletGroup
-      - code
     additionalProperties: false
   AddressType:
     type: string
@@ -466,16 +447,6 @@ definitions:
       - priority
     additionalProperties: false
     description: 'A positions to sort to.'
-  RecirculationReason:
-    type: string
-    enum:
-      - UNKNOWN
-      - OUTLET_NOT_AVAILABLE
-      - NO_CAPACITY
-      - ITEM_NO_OUTLETGROUP
-      - OUTLET_UNKNOWN
-      - ITEM_STRAY
-    description: "Defines the machine specific recirculation reasons.\nList of values:\n-UNKNOWN: Default enum value to map not supported values.\n-OUTLET_NOT_AVAILABLE: No available chute could be found.\n-NO_CAPACITY: The destination outlet has no more capacity.\n-ITEM_NO_OUTLETGROUP: No sorting information / outlet group has been received for this item.\n-OUTLET_UNKNOWN: Physical destination (outlet) invalid for this sorter.\n-ITEM_STRAY: Stray item detected."
   RecognitionResult:
     type: object
     properties:
@@ -512,20 +483,18 @@ definitions:
         type: string
         description: 'The machine specific identifier to track a mail item during a machine sorting cycle. The identifier is used to synchronize the data events between coding and sorting systems.'
         maxLength: 32
-      sortReasons:
+      requestReasons:
         type: array
         items:
-          $ref: '#/definitions/SortReason'
-        description: 'The current list of machine specific sort reasons.'
-      recirculationReasons:
-        type: array
-        items:
-          $ref: '#/definitions/RecirculationReason'
-        description: 'A list of reasons why a parcel was recirculated'
+          $ref: '#/definitions/RequestReason'
+        description: 'The reason why machine requests a new destination for the mailpiece.'
       recirculations:
         $ref: '#/definitions/Int'
         description: 'The number of recirculations of a Mailpiece on the sorting machine.'
         minimum: 0
+      outlet:
+        $ref: '#/definitions/Outlet'
+        description: "Outlet associated to the request reason.\nMust be set by the machine, whenever the request reason refers to an outlet, e.g. OUTLET_NOT_AVAILABLE, OUTLET_UNKNOWN."
       timestamp:
         type: string
         description: 'Timestamp of data collection.'
@@ -538,11 +507,28 @@ definitions:
       - locationKey
       - sortingProcess
       - processingItemId
+      - requestReasons
       - recirculations
       - timestamp
       - sourceId
     additionalProperties: false
     description: "This type provides the requester with the ability to obtain the results of an enrichment response. The RC\nreturns the document either on request of the MC or in an unsolicited fashion.\nThe MC expects to get all defined attributes for the corresponding mailpiece from the RC System."
+  RequestReason:
+    type: string
+    enum:
+      - SCANNER_TIMEOUT
+      - ITEM_INDUCTION_ERROR
+      - ITEM_DISCHARGE_ERROR
+      - ITEM_ERROR
+      - OUTLET_NOT_AVAILABLE
+      - OUTLET_UNKNOWN
+      - UNDEFINED_ERROR
+      - OUTLET_NO_CAPACITY
+      - ITEM_NO_OUTLETGROUP
+      - DIRECT_SORTING_MODE
+      - OUTLET_MISSED
+      - ITEM_OUTLETGROUP_REQUIRED
+    description: "The reason why the machine requests mailpiece attributes.\nList of values:\n- SCANNER_TIMEOUT: Item has reached the max allowed amount of scans and the last attempt was a \"no answer\" from scanner.\n- ITEM_INDUCTION_ERROR: Induction error item detected (occupied twice, wrong tray).\n- ITEM_DISCHARGE_ERROR: Discharge faults.\n- ITEM_ERROR: Item has a Logical error.\n- OUTLET_NOT_AVAILABLE: No available chute could be found.\n- OUTLET_UNKNOWN: Logical destination not defined.\n- UNDEFINED_ERROR: Internal error happened.\n- OUTLET_NO_CAPACITY: The destination outlet has no more capacity.\n- ITEM_NO_OUTLETGROUP: No sorting information / outlet group has been received for this item.\n- DIRECT_SORTING_MODE: Item sorted by the direct sorting mode.\n- OUTLET_MISSED: Sortcode has been updated (push or repetitive requests), physical outlet already passed.\n- ITEM_OUTLETGROUP_REQUIRED: the machine must make a decision where to"
   ShapeType:
     type: string
     enum:
@@ -551,32 +537,15 @@ definitions:
   SortReason:
     type: string
     enum:
-      - UNKNOWN
       - OK
-      - RECIRCULATION
       - MAX_RECIRCULATION
-      - ITEM_NO_READ
-      - ITEM_MULTIPLE_READ
-      - SCANNER_TIMEOUT
       - ITEM_STRAY
-      - ITEM_INDUCTION_ERROR
-      - ITEM_DISCHARGE_ERROR
-      - ITEM_ERROR
       - ITEM_TRACKING_ERROR
       - ITEM_OCCUPIED_TWICE_ERROR
       - ITEM_DISAPPEARED
-      - OUTLET_NOT_AVAILABLE
-      - OUTLET_UNKNOWN
-      - UNDEFINED_ERROR
-      - NO_CAPACITY
-      - ITEM_NO_OUTLETGROUP
       - DIMENSION_ERROR
       - WEIGHT_ERROR
-      - SORTPLAN_ERROR
-      - DIRECT_SORTING_MODE
-      - ITEM_NO_SORTCODE
-      - OUTLET_MISSED
-    description: "Defines the machine specific sort reasons.\nList of values:\n- UNKNOWN: Default enum value to map not supported values.\n- OK: Discharge OK. This describes just a \"regular\" item\n- RECIRCUALTION: The Item was not discharged and was recirculated.\n- MAX_RECIRCULATION: Item has reached the max allowed amount of recirculations.\n- ITEM_NO_READ: [DEPCRECATED] Item has reached the max allowed amount of scans and the last attempt was a no read.\n- ITEM_MULTIPLE_READ: [DEPCRECATED] Multiple national or international id barcodes could be identified.\n- SCANNER_TIMEOUT: Item has reached the max allowed amount of scans and the last attempt was a \"no answer\" from scanner.\n- ITEM_STRAY: Stray item detected.\n- ITEM_INDUCTION_ERROR: Induction error item detected (occupied twice, wrong tray).\n- ITEM_DISCHARGE_ERROR: Discharge faults.\n- ITEM_ERROR: Item has a Logical error.\n- ITEM_TRACKING_ERROR: item was inducted with tracking fault.\n- ITEM_OCCUPIED_TWICE_ERROR: item was inducted on occupied tray.\n- ITEM_DISAPPEARED: The parcel was lost at unknown location.\n- OUTLET_NOT_AVAILABLE: No available chute could be found.\n- OUTLET_UNKNOWN: Logical destination not defined.\n- UNDEFINED_ERROR: Internal error happened.\n- NO_CAPACITY: The destination outlet has no more capacity.\n- ITEM_NO_OUTLETGROUP: No sorting information / outlet group has been received for this item.\n- DIMENSION_ERROR: Item oversize. The parcel was discharge, because of dimension exceed.\n- WEIGHT_ERROR: Item too heavy. The parcel was discharge, because of weight exceed.\n- SORTPLAN_ERROR: Sortplan error.\n- DIRECT_SORTING_MODE: Item sorted by the direct sorting mode.\n- ITEM_NO_SORTCODE: No sortcode has been received for this item.\n- OUTLET_MISSED: Sortcode has been updated (push or repetitive requests), physical outlet already passed."
+    description: "Defines the machine specific sort reasons.\nList of values:\n- OK: Discharge OK. This describes just a \"regular\" item\n- MAX_RECIRCULATION: Item has reached the max allowed amount of recirculations.\n- ITEM_STRAY: Stray item detected.\n- ITEM_TRACKING_ERROR: item was inducted with tracking fault.\n- ITEM_OCCUPIED_TWICE_ERROR: item was inducted on occupied tray.\n- ITEM_DISAPPEARED: The parcel was lost at unknown location.\n- DIMENSION_ERROR: Item oversize. The parcel was discharge, because of dimension exceed.\n- WEIGHT_ERROR: Item too heavy. The parcel was discharge, because of weight exceed."
   SortingProcess:
     type: string
     enum:
@@ -703,7 +672,7 @@ definitions:
         type: integer
         description: "The destination sort code is the outlet group name (Virtuelles Ziel) assigned to the mail piece.\nSpecific values are defined on a per-program basis."
         maxLength: 3
-      finalCoded:
+      finalSorted:
         type: boolean
         description: "A boolean value indicating whether or not processing for a mail piece is complete.\n\n- false: mail piece was discharged\n- true: Discharging was verified"
       sortReason:
@@ -716,7 +685,7 @@ definitions:
       - timestamp
       - sourceId
       - sortBin
-      - finalCoded
+      - finalSorted
     additionalProperties: false
     description: "# GER-TODO\n\nDer Dienst ermöglicht der MC, aktualisierte oder zusätzliche Informationen in Bezug auf eine Postsendung zu übertragen,\ndie dem RC- System bereits vorgelegt worden ist. Solange sich die Postsendung zur Verarbeitung in der Maschine befindet, kann dieser\nDienst von der MC mehrfach ausgeführt werden.\nFür einen Sortierablauf ohne das Einscannen von Bildern (z.B.stationäre Bearbeitung im Zielfrachtzentrum oder Sortierung in der\nReihenfolge der Zustellung) kann mit diesem Dienst die Behälternummer zur Verfügung gestellt werden, in den die\nPostsendung physikalisch einsortiert wird; für diesen Fall muss kein submitMailpiece ausgeführt werden."
   WeightMeasurementState:
